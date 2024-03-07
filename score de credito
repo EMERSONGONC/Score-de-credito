@@ -1,0 +1,62 @@
+import pandas as pd
+
+tabela = pd.read_csv("clientes.csv") # importa a base de dados
+display(tabela)
+
+
+# %%
+print(tabela.info())
+print(tabela.columns)
+
+# %%
+from sklearn.preprocessing import LabelEncoder
+
+codificador = LabelEncoder()
+
+
+for coluna in tabela.columns:
+    if tabela[coluna].dtype == "object" and coluna != "score_credito":
+        tabela[coluna] = codificador.fit_transform(tabela[coluna])
+
+
+print(tabela.info())
+
+# %%
+#SEPARANDO EM TESTE E TREINO 
+x = tabela.drop(["score_credito", "id_cliente"], axis=1)
+y = tabela["score_credito"]
+
+from sklearn.model_selection import train_test_split
+x_treino, x_teste, y_treino, y_teste = train_test_split(x, y, test_size=0.3, random_state=1)
+
+
+# %%
+#TESTEI DOIS MODELOS
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+
+modelo_arvore = RandomForestClassifier() # modelo arvore de decisao
+modelo_knn = KNeighborsClassifier() # modelo do KNN 
+
+# treinando os modelos
+modelo_arvore.fit(x_treino, y_treino)
+modelo_knn.fit(x_treino, y_treino)
+
+# %%
+from sklearn.metrics import accuracy_score
+
+# previsoes
+previsao_arvore = modelo_arvore.predict(x_teste)
+previsao_knn = modelo_knn.predict(x_teste.to_numpy())
+
+
+# TESTENDO MELHO ACURACIA
+print(accuracy_score(y_teste, previsao_arvore)) # MELHOR OPÇÃO ACURACIA DE 83%
+print(accuracy_score(y_teste, previsao_knn))
+
+# %%
+# caracteristicas mais importantes para definir o score de credito
+colunas = list(x_teste.columns)
+importancia = pd.DataFrame(index=colunas, data=modelo_arvore.feature_importances_)
+importancia = importancia * 100
+print(importancia)
